@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Internal Server Error — Deadline Rescue{% endblock %}
+
+{% block content %}
+<div class="container-xl py-5 text-center">
+    <div class="card clay-card p-5 mx-auto" style="max-width: 580px;">
+        <div class="empty-state-icon-container mb-3 mx-auto text-danger">
+            <i class="bi bi-shield-slash-fill"></i>
+        </div>
+        <h1 class="h3 fw-bold text-slate-900 mb-2">Internal Server Error</h1>
+        <p class="text-secondary small mb-4">
+            An unexpected condition occurred while processing coursework data. Your database records remain safe and undisturbed.
+        </p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{{ url_for('index') }}" class="btn btn-primary-custom" id="btn-500-dashboard">
+                <i class="bi bi-grid-1x2-fill me-1"></i>Return to Dashboard
+            </a>
+            <a href="{{ url_for('list_tasks') }}" class="btn btn-secondary-custom" id="btn-500-tasks">
+                <i class="bi bi-arrow-left me-1"></i>View Tasks
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
