@@ -1,6 +1,5 @@
 """
 Deadline Rescue — SQLite Database Layer
-Step 2: Database foundation, schema definition, and task persistence.
 
 This module provides simple, reliable, and parameterized database operations
 using Python's built-in sqlite3 library.
@@ -19,7 +18,7 @@ VALID_TASK_TYPES = ("Assignment", "Quiz", "Lab", "Project", "Other")
 # Supported task statuses
 VALID_STATUSES = ("Pending", "Completed")
 
-# Schema definition for Step 2
+# Core SQLite schema definition
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

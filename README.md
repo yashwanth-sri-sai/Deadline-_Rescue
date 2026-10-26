@@ -1,211 +1,202 @@
 # Deadline Rescue — Smart Assignment & Deadline Management System
 
-**Deadline Rescue** is an academic productivity web application designed to help college students organize coursework deliverables, calculate urgency-weighted priority scores, track completion milestones, and eliminate submission panic.
+Deadline Rescue is an academic productivity web application designed to help college students organize coursework deliverables, calculate urgency-weighted priority scores, track completion milestones, and eliminate submission panic.
 
-This repository represents **Step 7: Final QA, Security Audit, Documentation & Release Readiness**, providing a verified, fully tested, and demonstrable coursework management system with 148 automated tests passing at a 100% success rate.
-
----
-
-## 1. Project Overview
-
-- **Project Name**: Deadline Rescue
-- **Target Users**: College and university students managing multiple course deadlines.
-- **Problem Solved**: Students frequently experience cognitive overload when juggling multiple assignments, quizzes, labs, and projects across diverse courses. Traditional to-do lists treat all items equally, ignoring deadlines, coursework importance, and estimated effort.
-- **Core Objectives**:
-  1. Eliminate eleventh-hour submission panic through deadline-aware priority scoring.
-  2. Surface a single, unambiguous **Recommended Next Task** to eliminate decision fatigue.
-  3. Provide an **Academic Command Center Dashboard** with real-time progress metrics and study workload distribution.
-  4. Deliver instant search, multi-criteria filtering, and 8 deterministic sorting modes.
-  5. Ensure rock-solid stability with an isolated, parameterized SQLite database layer and 100% test coverage.
+Built with Python (Flask) and SQLite, the system provides a clean command center dashboard, full task CRUD lifecycle, smart search and filtering, and a deterministic priority scoring engine.
 
 ---
 
-## 2. Feature Summary
+## 1. Features
 
-### A. Academic Command Center Dashboard (`/`)
+### Academic Command Center Dashboard (`/`)
 - **6 Real-Time Metric Cards**: Total Tasks, Pending Tasks, Completed Tasks, Overdue Tasks, Due Today, and Due Soon (1–7 days out).
-- **Semester Completion Progress Bar**: Displays exact completion percentage ($\frac{\text{Completed}}{\text{Total}} \times 100\%$) with accessible markup (`role="progressbar"`).
-- **Workload by Course Subject**: Aggregates remaining study/lab hours for **Pending tasks only**, with CSS-based proportional horizontal progress bars (zero external charting dependencies).
-- **Upcoming Deadlines Pipeline**: Curates up to 5 nearest active deliverables due today or in the future, excluding overdue and completed tasks.
+- **Semester Completion Progress Bar**: Displays overall completion percentage ($\frac{\text{Completed}}{\text{Total}} \times 100\%$) with accessible markup.
+- **Workload by Course Subject**: Aggregates remaining study and lab hours for **Pending tasks only**, with CSS-based proportional horizontal progress bars (zero external charting dependencies).
+- **Upcoming Deadlines Pipeline**: Displays the nearest active deliverables due today or in the future, excluding overdue and completed tasks.
 
-### B. Full Task Lifecycle CRUD (`/tasks`, `/tasks/new`, `/tasks/<id>/edit`)
-- **Create**: Add coursework with title, course code, task type (`Assignment`, `Quiz`, `Lab`, `Project`, `Other`), due date (`YYYY-MM-DD`), importance (`1` to `5`), estimated hours, and optional notes.
-- **Edit**: Update deliverable details with full form prepopulation while strictly preserving task ID, status, and creation timestamps.
-- **Complete & Reopen**: One-click status toggling with visual strike-through treatment.
-- **Delete**: Safe deletion using HTTP POST and browser confirmation dialogs.
+### Coursework Deliverables Management (`/tasks`, `/tasks/new`, `/tasks/<id>/edit`)
+- **Task Lifecycle CRUD**: Create, view, edit, complete, reopen, and delete coursework items.
+- **Form Prepopulation & Safe Edits**: Edit coursework details with full form prepopulation while strictly preserving task IDs and creation timestamps.
+- **Status Toggling**: One-click completion marking and reopening with distinct visual treatments.
+- **Safe Deletion**: Deletion requires HTTP POST confirmation to prevent accidental loss.
 
-### C. Priority Engine & Deadline Awareness (`priority.py`)
-- Evaluates urgency, course importance, and estimated effort into an exact continuous score ($0.0$ to $100.0$).
-- Maps scores to 4 color-coded categorical badges: **Critical** (75–100), **High** (50–74.99), **Medium** (25–49.99), and **Low** (0–24.99).
-- Generates human-friendly deadline messages (`Overdue by X days`, `Due today`, `Due tomorrow`, `Due in X days`).
+### Priority Engine & Deadline Awareness (`priority.py`)
+- **Continuous Priority Scoring**: Dynamically calculates a composite score from $0.0$ to $100.0$ combining urgency, importance, and estimated effort.
+- **Categorical Badges**: Maps scores into 4 distinct priority tiers: **Critical** (75–100), **High** (50–74.99), **Medium** (25–49.99), and **Low** (0–24.99).
+- **Human-Friendly Relative Dates**: Computes dynamic relative deadline labels (`Overdue by X days`, `Due today`, `Due tomorrow`, `Due in X days`).
+- **Recommended Next Task**: Highlights the single most urgent pending deliverable across the entire database, independent of active table filters.
 
-### D. Recommended Next Task Banner
-- Automatically highlights the single most urgent `Pending` task across the entire database.
-- Completely decoupled and independent of active search queries, table filters, or table sorting modes.
-- Never recommends a completed task; displays an *"All caught up!"* celebration banner when all work is finished.
-
-### E. Smart Search, Filtering & 8 Sorting Modes (`/tasks`)
-- **Search**: Dual-field case-insensitive partial substring search across Title and Subject.
-- **Filters**: Status (`Pending`, `Completed`), Subject (dynamically populated and deduplicated), and Priority (`Critical`, `High`, `Medium`, `Low`) combined via strict **AND logic**.
+### Search, Filtering & Deterministic Sorting (`/tasks`)
+- **Search**: Case-insensitive substring search matching across Task Title and Course Subject.
+- **Multi-Criteria Filtering**: Combine Status (`Pending`, `Completed`), Subject, and Priority tier using strict AND logic.
 - **8 Deterministic Sorting Modes**:
   1. `Recommended Priority` (Priority score $\downarrow$, Due date $\uparrow$, Task ID $\uparrow$)
   2. `Deadline: Earliest First` (Due date $\uparrow$, Priority score $\downarrow$, Task ID $\uparrow$)
   3. `Deadline: Latest First` (Due date $\downarrow$, Priority score $\downarrow$, Task ID $\uparrow$)
   4. `Priority: Highest First` (Priority score $\downarrow$, Due date $\uparrow$, Task ID $\uparrow$)
   5. `Priority: Lowest First` (Priority score $\uparrow$, Due date $\uparrow$, Task ID $\uparrow$)
-  6. `Title: A–Z` (Title alphabetical $\uparrow$, Task ID $\uparrow$)
-  7. `Title: Z–A` (Title reverse alphabetical $\downarrow$, Task ID $\uparrow$)
+  6. `Title: A–Z` (Alphabetical $\uparrow$, Task ID $\uparrow$)
+  7. `Title: Z–A` (Reverse alphabetical $\downarrow$, Task ID $\uparrow$)
   8. `Newest First` (Creation timestamp $\downarrow$, Task ID $\downarrow$)
+
+---
+
+## 2. Priority Scoring Formula
+
+The priority engine computes an exact priority score between $0.0$ and $100.0$:
+
+$$\text{Priority Score} = 0.60 \times U + 0.25 \times \left(\frac{I}{5} \times 100\right) + 0.15 \times \min\left(\frac{H}{8}, 1.0\right) \times 100$$
+
+### Components:
+1. **Urgency ($U$, 60% Weight)**: Evaluated from calendar days remaining ($\text{due\_date} - \text{today}$):
+   - $\text{Overdue} (< 0 \text{ days}) \rightarrow U = 100$
+   - $\text{Due Today} (0 \text{ days}) \rightarrow U = 100$
+   - $\text{Due Tomorrow} (1 \text{ day}) \rightarrow U = 90$
+   - $\text{Due in } 2–3 \text{ days} \rightarrow U = 75$
+   - $\text{Due in } 4–7 \text{ days} \rightarrow U = 50$
+   - $\text{Due in } 8–14 \text{ days} \rightarrow U = 30$
+   - $\text{Due in } > 14 \text{ days} \rightarrow U = 10$
+2. **Importance ($I$, 25% Weight)**: User rating on a 1–5 scale, normalized to 100.
+3. **Effort ($H$, 15% Weight)**: Estimated workload in hours, normalized and capped at 8 hours (100).
 
 ---
 
 ## 3. Technology Stack
 
-- **Python**: Version 3.11+
-- **Backend Framework**: Flask 3.1.3 (WSGI web framework)
-- **Database**: SQLite3 (Python standard library `sqlite3` with parameterized statements)
-- **Frontend Framework**: Bootstrap 5.3.3 (Official CDN) & Bootstrap Icons 1.11.3
-- **Design System**: Colorful Premium Claymorphism (Soft 3D pastel surfaces, multi-layered ambient and inset depth shadows, friendly 26px card radii, tactile pill buttons, and responsive controls in `static/css/style.css`)
-- **Scripting**: Vanilla JavaScript for accessible link protection and client diagnostics (`static/js/main.js`)
-- **Testing**: Python standard library `unittest` (148 tests across 6 test suites)
+- **Backend**: Python 3.11+, Flask 3.1
+- **Database**: SQLite3 (via Python standard library `sqlite3` with parameterized statements)
+- **Frontend**: HTML5, Vanilla CSS design tokens (`static/css/style.css`), Bootstrap 5.3.3 & Bootstrap Icons 1.11.3 (via CDN)
+- **Client Scripting**: Vanilla JavaScript (`static/js/main.js`)
+- **Testing**: Python standard library `unittest` (148 automated tests)
 
 ---
 
-## 4. Priority Formula & Urgency Thresholds
-
-$$\text{Priority Score} = 0.60 \times U + 0.25 \times \left(\frac{I}{5} \times 100\right) + 0.15 \times \min\left(\frac{H}{8}, 1.0\right) \times 100$$
-
-### Parameter Weights:
-1. **Urgency ($U$, 60% Weight)**: Evaluated from calendar days remaining ($\text{due\_date} - \text{today}$):
-   - $\text{Overdue} \le 0 \text{ days} \rightarrow U = 100$
-   - $\text{Due today} (0 \text{ days}) \rightarrow U = 100$
-   - $\text{Due tomorrow} (1 \text{ day}) \rightarrow U = 90$
-   - $\text{Due in } 2–3 \text{ days} \rightarrow U = 75$
-   - $\text{Due in } 4–7 \text{ days} \rightarrow U = 50$
-   - $\text{Due in } 8–14 \text{ days} \rightarrow U = 30$
-   - $\text{Due in } > 14 \text{ days} \rightarrow U = 10$
-2. **Importance ($I$, 25% Weight)**: User rating on a 1–5 scale, normalized to $100$.
-3. **Effort ($H$, 15% Weight)**: Estimated study/lab hours, normalized and capped at 8 hours ($100$).
-
----
-
-## 5. Project Directory Structure
+## 4. Project Structure
 
 ```text
-deadline-rescue/
-├── app.py                      # Flask application factory, route handlers, validation, error handlers
-├── database.py                 # SQLite connection manager, schema initialization, parameterized CRUD
-├── priority.py                 # Priority scoring engine, urgency tables, filter & sort algorithms
-├── analytics.py                # Pure-Python analytics engine: summary counts, boundaries, workload
-├── requirements.txt            # Minimal project dependencies (Flask 3.x)
-├── README.md                   # Complete architectural and execution documentation
-├── PROJECT_DEMO_CHECKLIST.md   # Step-by-step evaluator demonstration script and anticipated Q&A
-├── step_6_verification_report.md # Step 6 QA verification report
-├── step_7_verification_report.md # Final Step 7 release-readiness verification report
-├── test_step2.py               # Step 2 Database foundation test suite (12 tests)
-├── test_step3.py               # Step 3 Task CRUD lifecycle test suite (27 tests)
-├── test_priority.py            # Step 4 Priority engine & recommendation test suite (28 tests)
-├── test_task_filters.py        # Step 5 Search, filtering & 8 sorting modes test suite (33 tests)
-├── test_analytics.py           # Step 6 Dashboard & workload analytics test suite (27 tests)
-├── test_final_qa.py            # Step 7 Final QA & security regression test suite (21 tests)
+Deadline-_Rescue/
+├── app.py                      # Flask application factory, routes, and error handlers
+├── database.py                 # SQLite connection manager, schema initialization, CRUD functions
+├── priority.py                 # Priority calculation, urgency thresholds, filtering and sorting
+├── analytics.py                # Dashboard statistical aggregation and workload calculations
+├── requirements.txt            # Python package dependencies (Flask)
+├── .gitignore                  # Git ignore rules for virtualenvs, caches, and databases
+├── README.md                   # Project documentation
+├── PROJECT_DEMO_CHECKLIST.md   # Evaluator demonstration checklist and technical Q&A
 ├── instance/
-│   └── deadline_rescue.db      # Local SQLite database file (auto-initialized, git-ignored)
+│   └── deadline_rescue.db      # Local SQLite database (auto-created on startup, git-ignored)
 ├── templates/
-│   ├── base.html               # Master layout with navigation, system status pill, and footer
-│   ├── dashboard.html          # Academic Command Center dashboard with summary cards & workload
-│   ├── tasks.html              # Coursework task list with filter panel, table, and empty states
-│   ├── task_form.html          # Unified form for creating and editing coursework deliverables
-│   ├── 404.html                # Friendly 404 Not Found template
-│   └── 500.html                # Friendly 500 Internal Error template
-└── static/
-    ├── css/
-    │   └── style.css           # Custom SaaS stylesheet, cards, badges, and progress components
-    └── js/
-        └── main.js             # Accessible link safeguards and runtime diagnostics
+│   ├── base.html               # Master layout with navigation and footer
+│   ├── dashboard.html          # Academic Command Center dashboard view
+│   ├── tasks.html              # Coursework management view with filter bar and task table
+│   ├── task_form.html          # Form for creating and editing tasks
+│   ├── 404.html                # Friendly 404 Not Found error template
+│   └── 500.html                # Friendly 500 Internal Error error template
+├── static/
+│   ├── css/
+│   │   └── style.css           # Custom CSS stylesheet with design tokens and cards
+│   └── js/
+├── test_priority.py            # Priority engine and urgency calculations (28 tests)
+├── test_analytics.py           # Dashboard metrics and workload aggregation (27 tests)
+├── test_task_filters.py        # Search, multi-criteria filters, and sorting modes (33 tests)
+├── test_step2.py               # Database foundation, schema, and validation (12 tests)
+├── test_step3.py               # Task CRUD lifecycle operations (27 tests)
+└── test_final_qa.py            # End-to-end user workflows and security regression (21 tests)
 ```
 
 ---
 
-## 6. Setup & Running the Application (Windows PowerShell)
+## 5. Installation & Setup
 
-Follow these steps from the project root directory (`a:\Python Project`):
+### Prerequisites
+- Python 3.11 or higher
+- PowerShell (Windows) or terminal (macOS/Linux)
 
-### Step 1: Create a Virtual Environment (if not already present)
+### 1. Create a Virtual Environment
 ```powershell
 python -m venv .venv
 ```
 
-### Step 2: Activate the Virtual Environment
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
+### 2. Activate the Virtual Environment
+- **Windows (PowerShell)**:
+  ```powershell
+  .\.venv\Scripts\Activate.ps1
+  ```
+- **macOS / Linux**:
+  ```bash
+  source .venv/bin/activate
+  ```
 
-> **PowerShell Execution Policy Tip:**  
-> If script execution is restricted on your machine, you can run commands directly using the virtual environment's Python executable without changing system policies:
-> ```powershell
-> .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-> .\.venv\Scripts\python.exe app.py
-> ```
+*(If script execution is restricted on Windows PowerShell, you can invoke the virtual environment Python binary directly: `.\.venv\Scripts\python.exe`)*
 
-### Step 3: Install Dependencies
+### 3. Install Dependencies
 ```powershell
 python -m pip install -r requirements.txt
 ```
 
-### Step 4: Run the Local Development Server
+---
+
+## 6. How to Run the Application
+
+Start the local Flask development server:
+
 ```powershell
 python app.py
 ```
 
-### Step 5: Open in Web Browser
-- **Academic Command Center (Dashboard)**: `http://127.0.0.1:5000/`
-- **Coursework Management (Tasks)**: `http://127.0.0.1:5000/tasks`
-- **Create New Task**: `http://127.0.0.1:5000/tasks/new`
+Open your browser to:
+- **Dashboard**: [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
+- **Tasks Management**: [http://127.0.0.1:5000/tasks](http://127.0.0.1:5000/tasks)
+- **Add New Task**: [http://127.0.0.1:5000/tasks/new](http://127.0.0.1:5000/tasks/new)
 
 ---
 
-## 7. Database Information
+## 7. How to Run Tests
 
-- **Storage Location**: `instance/deadline_rescue.db` (auto-created inside the application instance directory).
-- **Schema Initialization**: Automatically invoked on application startup via `database.init_app(app)` and `CREATE TABLE IF NOT EXISTS tasks (...)`.
-- **Data Persistence**: All created, updated, and completed tasks persist permanently across server restarts.
-- **Safety Rule**: Existing database records are never dropped, reset, or overwritten by the application.
+The project includes **148 automated unit and integration tests** built using Python's standard `unittest` framework.
 
----
-
-## 8. Running Automated Tests
-
-Deadline Rescue includes a comprehensive test suite of **148 automated tests** across 6 test modules:
-
+### Run All 148 Tests
 ```powershell
-# Run all 148 automated tests across the entire application:
-.\.venv\Scripts\python.exe -m unittest discover -p "test_*.py" -v
-
-# Or run individual test modules:
-.\.venv\Scripts\python.exe test_final_qa.py -v       # Step 7 Final QA & Security (21 tests)
-.\.venv\Scripts\python.exe test_analytics.py -v      # Step 6 Dashboard Analytics (27 tests)
-.\.venv\Scripts\python.exe test_task_filters.py -v   # Step 5 Search & Filters (33 tests)
-.\.venv\Scripts\python.exe test_priority.py -v       # Step 4 Priority Engine (28 tests)
-.\.venv\Scripts\python.exe test_step3.py -v          # Step 3 Task CRUD (27 tests)
-.\.venv\Scripts\python.exe test_step2.py -v          # Step 2 Database Foundation (12 tests)
+python -m unittest discover -s . -p "test_*.py" -v
 ```
 
-### Test Coverage Summary:
-| Test Suite | Module | Test Count | Status |
-| :--- | :--- | :---: | :---: |
-| **Final QA & Security** | `test_final_qa.py` | 21 | **21/21 PASSED** |
-| **Dashboard Analytics** | `test_analytics.py` | 27 | **27/27 PASSED** |
-| **Search, Filters & Sorting** | `test_task_filters.py` | 33 | **33/33 PASSED** |
-| **Priority Engine** | `test_priority.py` | 28 | **28/28 PASSED** |
-| **Task CRUD Operations** | `test_step3.py` | 27 | **27/27 PASSED** |
-| **Database Foundation** | `test_step2.py` | 12 | **12/12 PASSED** |
-| **Full Project Test Suite** | **All 6 Suites** | **148** | **148/148 PASSED (100%)** |
+### Run Individual Test Suites
+```powershell
+python -m unittest test_priority.py -v       # Priority scoring & urgency (28 tests)
+python -m unittest test_analytics.py -v      # Dashboard analytics & workload (27 tests)
+python -m unittest test_task_filters.py -v   # Search, filter, and sort (33 tests)
+python -m unittest test_step2.py -v          # Database initialization & validation (12 tests)
+python -m unittest test_step3.py -v          # Task CRUD lifecycle (27 tests)
+python -m unittest test_final_qa.py -v       # End-to-end QA & security (21 tests)
+```
+
+All test cases use isolated temporary SQLite databases (`tempfile.mkstemp()`), ensuring that running the test suite never modifies or deletes your actual local data.
 
 ---
 
-## 9. Security & Known Limitations
+## 8. Database Behavior & Persistence
 
-1. **Local Prototype Context**: Deadline Rescue is engineered as a local single-user academic companion running on `127.0.0.1:5000`.
-2. **CSRF Protection**: State-changing POST requests do not currently require a CSRF token. In accordance with the Step 7 audit, external packages (such as Flask-WTF) are not installed to maintain zero-network dependency stability. For multi-user public internet deployment, CSRF protection via Flask-WTF is an essential enhancement.
-3. **Authentication**: User accounts, login sessions, and role-based permissions are intentionally omitted from this step.
-4. **Calendar Synchronization**: External Google Calendar or iCal sync is not implemented.
+- **Database Engine**: SQLite3
+- **File Location**: `instance/deadline_rescue.db` (created automatically within the instance folder on first run).
+- **Schema Management**: Tables are created automatically on startup via `CREATE TABLE IF NOT EXISTS tasks (...)` inside `database.init_app()`.
+- **Data Persistence**: Records persist permanently across application restarts. Existing records are never overwritten or deleted on server start.
+- **Git Ignore**: The `instance/` folder and `*.db` files are excluded by [.gitignore](file:///.gitignore) to keep personal coursework databases out of version control.
+
+---
+
+## 9. Security & Project Limitations
+
+1. **Academic Prototype Context**: Deadline Rescue is designed and tested as a local, single-user academic tool running on `127.0.0.1`.
+2. **SQL Injection Protection**: All database queries in `database.py` use parameterized statements (`?` placeholders). Raw user input is never concatenated into SQL queries.
+3. **Cross-Site Scripting (XSS) Prevention**: All user-provided fields (titles, subjects, descriptions) are rendered through Jinja2 with autoescaping enabled.
+4. **CSRF Tokens**: Form submissions currently do not use CSRF tokens to avoid external package dependencies (such as `Flask-WTF`) in offline academic evaluation environments.
+5. **Authentication**: User accounts, login sessions, and multi-user access control are not part of this prototype scope.
+
+---
+
+## 10. Future Improvements
+
+- Multi-user authentication and role-based course access.
+- Calendar export and synchronization (iCalendar / Google Calendar `.ics` feeds).
+- Reminders and desktop notifications for impending deadlines.
+- Interactive historical completion trend charts using client-side SVG or Canvas.

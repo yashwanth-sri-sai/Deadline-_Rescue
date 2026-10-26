@@ -1,6 +1,5 @@
 """
 Deadline Rescue — Priority Engine & Deadline Awareness
-Step 4: Priority calculation, urgency determination, deadline status, and recommendations.
 
 This module is completely decoupled from web routes, HTML templates, and SQLite database
 connections. All calculations are dynamic and deterministic.

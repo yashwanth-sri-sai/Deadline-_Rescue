@@ -1,6 +1,5 @@
 """
 Deadline Rescue — Dashboard Analytics Service
-Step 6: Progress analytics, summary metrics, workload by subject, and upcoming deadlines.
 
 This module provides testable, decoupled analytics functions using Python's standard library
 and existing task fields. All calculations are dynamic and deterministic.

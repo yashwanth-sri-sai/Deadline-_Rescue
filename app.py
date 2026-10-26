@@ -1,6 +1,5 @@
 """
 Deadline Rescue — Smart Assignment & Deadline Management System
-Step 3: Complete Task Management: Edit, Update, Complete, Reopen & Delete
 
 This module serves as the core application entry point.
 It initializes Flask, registers configuration settings, connects the SQLite
@@ -127,7 +126,7 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     # Core application configuration
     app.config.from_mapping(
-        SECRET_KEY=os.environ.get("SECRET_KEY", "dev-deadline-rescue-secret-key-step-3"),
+        SECRET_KEY=os.environ.get("SECRET_KEY", "dev-deadline-rescue-secret-key-default"),
         DATABASE=os.path.join(app.instance_path, "deadline_rescue.db"),
         DEBUG=os.environ.get("FLASK_DEBUG", "True").lower() in ("true", "1"),
     )
