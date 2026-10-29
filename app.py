@@ -125,10 +125,29 @@ def create_app(test_config: dict | None = None) -> Flask:
     app = Flask(__name__, instance_relative_config=True)
 
     # Core application configuration
+    is_vercel = os.environ.get("VERCEL") == "1"
+    default_db = (
+        "/tmp/deadline_rescue.db"
+        if is_vercel
+        else os.path.join(app.instance_path, "deadline_rescue.db")
+    )
+    default_debug = "0" if is_vercel else "1"
+    DEV_SECRET_KEY = "dev-deadline-rescue-secret-key-default"
+    configured_secret = os.environ.get("SECRET_KEY", DEV_SECRET_KEY)
+    is_testing = bool(test_config and test_config.get("TESTING"))
+
+    # Enforce secure SECRET_KEY in production (e.g. Vercel) while preserving local developer convenience
+    if (is_vercel or os.environ.get("FLASK_ENV") == "production") and not is_testing:
+        if not configured_secret or configured_secret == DEV_SECRET_KEY:
+            raise RuntimeError(
+                "A secure, non-default SECRET_KEY environment variable is required in production. "
+                "Please configure SECRET_KEY in your Vercel project settings."
+            )
+
     app.config.from_mapping(
-        SECRET_KEY=os.environ.get("SECRET_KEY", "dev-deadline-rescue-secret-key-default"),
-        DATABASE=os.path.join(app.instance_path, "deadline_rescue.db"),
-        DEBUG=os.environ.get("FLASK_DEBUG", "True").lower() in ("true", "1"),
+        SECRET_KEY=configured_secret,
+        DATABASE=os.environ.get("DB_PATH", default_db),
+        DEBUG=os.environ.get("FLASK_DEBUG", default_debug).lower() in ("true", "1"),
     )
 
     if test_config:

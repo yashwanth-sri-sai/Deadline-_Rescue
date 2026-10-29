@@ -31,8 +31,8 @@ class TaskFiltersTestCase(unittest.TestCase):
         self.app = create_app({"TESTING": True, "DATABASE": self.db_path})
         self.client = self.app.test_client()
 
-        # Fixed reference date for deterministic priority calculation: 2026-10-24
-        self.ref_today = date(2026, 10, 24)
+        # Dynamic reference date matching date.today() so real-time route filters match
+        self.ref_today = date.today()
 
     def tearDown(self):
         """Remove the temporary SQLite database file after each test."""
@@ -46,14 +46,16 @@ class TaskFiltersTestCase(unittest.TestCase):
         """
         Helper to seed a diverse set of tasks covering various subjects,
         statuses, deadlines, importances, and efforts.
-        Reference date: 2026-10-24.
+        Deadlines are relative to self.ref_today (date.today()) for deterministic execution.
         """
+        today = self.ref_today
+
         # 1. Overdue, Pending, Critical (U=100, I=5, H=8 -> 100.0)
         id1 = database.create_task(
             title="Operating Systems Kernel Lab",
             subject="CS 401",
             task_type="Lab",
-            due_date="2026-10-20",  # 4 days overdue
+            due_date=(today - timedelta(days=4)).isoformat(),  # 4 days overdue
             importance=5,
             estimated_hours=8.0,
             status="Pending",
@@ -65,7 +67,7 @@ class TaskFiltersTestCase(unittest.TestCase):
             title="Linear Algebra Homework 4",
             subject="MATH 201",
             task_type="Assignment",
-            due_date="2026-10-25",  # due tomorrow
+            due_date=(today + timedelta(days=1)).isoformat(),  # due tomorrow
             importance=5,
             estimated_hours=6.0,
             status="Pending",
@@ -77,7 +79,7 @@ class TaskFiltersTestCase(unittest.TestCase):
             title="Database B-Tree Indexing Project",
             subject="CS 320",
             task_type="Project",
-            due_date="2026-10-29",  # due in 5 days
+            due_date=(today + timedelta(days=5)).isoformat(),  # due in 5 days
             importance=4,
             estimated_hours=4.0,
             status="Pending",
@@ -89,7 +91,7 @@ class TaskFiltersTestCase(unittest.TestCase):
             title="Ethics in AI Essay",
             subject="PHIL 105",
             task_type="Assignment",
-            due_date="2026-11-13",  # due in 20 days
+            due_date=(today + timedelta(days=20)).isoformat(),  # due in 20 days
             importance=3,
             estimated_hours=2.0,
             status="Pending",
@@ -101,7 +103,7 @@ class TaskFiltersTestCase(unittest.TestCase):
             title="Computer Networks Quiz Review",
             subject="CS 401",
             task_type="Quiz",
-            due_date="2026-10-15",
+            due_date=(today - timedelta(days=9)).isoformat(),  # 9 days overdue
             importance=5,
             estimated_hours=4.0,
             status="Completed",
@@ -113,7 +115,7 @@ class TaskFiltersTestCase(unittest.TestCase):
             title="Physics Lab 3 Report",
             subject="PHY 101",
             task_type="Lab",
-            due_date="2026-11-03",
+            due_date=(today + timedelta(days=10)).isoformat(),  # due in 10 days
             importance=2,
             estimated_hours=1.0,
             status="Completed",
@@ -338,18 +340,20 @@ class TaskFiltersTestCase(unittest.TestCase):
         self._seed_standard_tasks()
         tasks = database.get_all_tasks(self.db_path)
         sorted_tasks = priority.filter_and_sort_tasks(tasks, sort_by="deadline_asc", today=self.ref_today)
-        # 2026-10-15 (Networks Quiz, ID 5) is the earliest deadline
-        self.assertEqual(sorted_tasks[0]["due_date"], "2026-10-15")
-        self.assertEqual(sorted_tasks[-1]["due_date"], "2026-11-13")
+        earliest_due = (self.ref_today - timedelta(days=9)).isoformat()
+        latest_due = (self.ref_today + timedelta(days=20)).isoformat()
+        self.assertEqual(sorted_tasks[0]["due_date"], earliest_due)
+        self.assertEqual(sorted_tasks[-1]["due_date"], latest_due)
 
     def test_21_sort_deadline_latest_first(self):
         """Sort by 'deadline_desc' puts latest deadline first."""
         self._seed_standard_tasks()
         tasks = database.get_all_tasks(self.db_path)
         sorted_tasks = priority.filter_and_sort_tasks(tasks, sort_by="deadline_desc", today=self.ref_today)
-        # 2026-11-13 (Ethics, ID 4) is the latest deadline
-        self.assertEqual(sorted_tasks[0]["due_date"], "2026-11-13")
-        self.assertEqual(sorted_tasks[-1]["due_date"], "2026-10-15")
+        earliest_due = (self.ref_today - timedelta(days=9)).isoformat()
+        latest_due = (self.ref_today + timedelta(days=20)).isoformat()
+        self.assertEqual(sorted_tasks[0]["due_date"], latest_due)
+        self.assertEqual(sorted_tasks[-1]["due_date"], earliest_due)
 
     def test_22_sort_priority_highest_and_lowest_first(self):
         """Sort by 'priority_desc' and 'priority_asc' orders by priority score."""

@@ -55,6 +55,24 @@ def get_db_path(custom_path: Optional[str] = None) -> str:
     return os.path.join(base_dir, "instance", "deadline_rescue.db")
 
 
+def _ensure_dir_exists(dir_path: str) -> None:
+    """
+    Ensure the directory for the SQLite database exists.
+    Skips creation if the directory already exists (e.g. /tmp on Vercel or an existing instance folder).
+    Raises a descriptive RuntimeError if directory creation fails due to a read-only filesystem.
+    """
+    if not dir_path or os.path.exists(dir_path):
+        return
+    try:
+        os.makedirs(dir_path, exist_ok=True)
+    except (PermissionError, OSError) as exc:
+        raise RuntimeError(
+            f"Cannot create database directory '{dir_path}'. "
+            f"On serverless hosts like Vercel, the filesystem is read-only. "
+            f"Set DB_PATH to an ephemeral path like '/tmp/deadline_rescue.db'."
+        ) from exc
+
+
 @contextmanager
 def get_db_connection(db_path: Optional[str] = None) -> Generator[sqlite3.Connection, None, None]:
     """
@@ -62,7 +80,7 @@ def get_db_connection(db_path: Optional[str] = None) -> Generator[sqlite3.Connec
     Automatically closes the connection upon completion.
     """
     path = get_db_path(db_path)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    _ensure_dir_exists(os.path.dirname(path))
 
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
@@ -80,7 +98,7 @@ def get_db() -> sqlite3.Connection:
     """
     if "db" not in g:
         path = get_db_path()
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        _ensure_dir_exists(os.path.dirname(path))
         g.db = sqlite3.connect(path)
         g.db.row_factory = sqlite3.Row
         g.db.execute("PRAGMA foreign_keys = ON;")
@@ -292,11 +310,16 @@ def init_app(app: Flask) -> None:
     Integrate database management with the Flask application factory.
     Sets default database path in instance folder and initializes tables.
     """
-    # Ensure instance directory exists
-    os.makedirs(app.instance_path, exist_ok=True)
-
-    default_db = os.path.join(app.instance_path, "deadline_rescue.db")
+    default_db = (
+        "/tmp/deadline_rescue.db"
+        if os.environ.get("VERCEL") == "1"
+        else os.path.join(app.instance_path, "deadline_rescue.db")
+    )
     app.config.setdefault("DATABASE", default_db)
+
+    # Ensure target database directory exists
+    target_db = app.config["DATABASE"]
+    _ensure_dir_exists(os.path.dirname(os.path.abspath(target_db)))
 
     # Register teardown function for web requests
     app.teardown_appcontext(close_db)

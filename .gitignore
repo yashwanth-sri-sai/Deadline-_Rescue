@@ -32,3 +32,9 @@ htmlcov/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Vercel deployment cache
+.vercel/
+
+.vercel
+.env*
