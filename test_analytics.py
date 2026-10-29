@@ -420,13 +420,13 @@ class DashboardIntegrationTestCase(unittest.TestCase):
 
     def test_dashboard_static_assets_return_200(self):
         """Static CSS and JavaScript assets are accessible and return HTTP 200."""
-        css_resp = self.client.get("/static/css/style.css")
-        self.assertEqual(css_resp.status_code, 200)
-        self.assertIn(b".stat-card", css_resp.data)
+        with self.client.get("/static/css/style.css") as css_resp:
+            self.assertEqual(css_resp.status_code, 200)
+            self.assertIn(b".stat-card", css_resp.data)
 
-        js_resp = self.client.get("/static/js/main.js")
-        self.assertEqual(js_resp.status_code, 200)
-        self.assertIn(b"Step 6", js_resp.data)
+        with self.client.get("/static/js/main.js") as js_resp:
+            self.assertEqual(js_resp.status_code, 200)
+            self.assertIn(b"Step 6", js_resp.data)
 
 
 class Step6RegressionTestCase(unittest.TestCase):

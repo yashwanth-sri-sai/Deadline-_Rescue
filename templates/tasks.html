@@ -38,7 +38,7 @@
             </div>
             <h2 class="h4 fw-bold text-slate-900 mb-2">No tasks found</h2>
             <p class="text-secondary small mx-auto mb-4 empty-state-text">
-                Your SQLite database is active and ready, but no assignments or coursework deadlines have been recorded yet.
+                No assignments or coursework deadlines have been recorded yet.
                 Create your first task to start organizing your semester.
             </p>
             <a href="{{ url_for('create_task_route') }}" class="btn btn-primary-custom btn-lg d-inline-flex align-items-center shadow-sm px-4" id="btn-empty-add-first-task">
@@ -61,7 +61,7 @@
                         <i class="bi bi-bullseye me-1"></i>Recommended Next Task
                     </span>
                     <span class="text-muted small font-monospace d-none d-sm-inline">
-                        <i class="bi bi-cpu me-1"></i>Priority Engine
+                        <i class="bi bi-star-fill me-1 text-primary-accent"></i>Priority Recommendation
                     </span>
                 </div>
                 <div>
@@ -102,6 +102,7 @@
 
                 <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-wrap">
                     <form method="POST" action="{{ url_for('complete_task_route', task_id=recommended_task.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-secondary-custom d-inline-flex align-items-center gap-1 shadow-sm" id="btn-rec-complete" style="border-color: var(--pastel-mint-border); color: var(--pastel-mint-text);" title="Mark Complete: {{ recommended_task.title }}" aria-label="Mark Complete: {{ recommended_task.title }}">
                             <i class="bi bi-check2-circle" aria-hidden="true"></i>
                             <span>Mark Complete</span>
@@ -244,9 +245,9 @@
         <div class="card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-list-columns-reverse text-primary-accent"></i>
-                <h2 class="h6 fw-bold mb-0 text-slate-900">Registered Coursework Deliverables</h2>
+                <h2 class="h6 fw-bold mb-0 text-slate-900">Coursework Tasks</h2>
             </div>
-            <span class="text-muted small font-monospace"><i class="bi bi-database-check me-1 text-success"></i>SQLite Synced</span>
+            <span class="text-muted small font-monospace">Manage &amp; Track</span>
         </div>
 
         <!-- Responsive Task Table -->
@@ -343,6 +344,7 @@
                                 <!-- Status Toggle: Complete or Reopen -->
                                 {% if task.status == 'Completed' %}
                                 <form method="POST" action="{{ url_for('reopen_task_route', task_id=task.id) }}" class="d-inline" id="form-reopen-{{ task.id }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button 
                                         type="submit" 
                                         class="btn btn-sm btn-secondary-custom d-inline-flex align-items-center gap-1" 
@@ -356,6 +358,7 @@
                                 </form>
                                 {% else %}
                                 <form method="POST" action="{{ url_for('complete_task_route', task_id=task.id) }}" class="d-inline" id="form-complete-{{ task.id }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button 
                                         type="submit" 
                                         class="btn btn-sm btn-secondary-custom d-inline-flex align-items-center gap-1" 
@@ -391,6 +394,7 @@
                                     id="form-delete-{{ task.id }}"
                                     onsubmit="return confirm('Are you sure you want to delete this task: \'{{ task.title|escape }}\'? This action cannot be undone.');"
                                 >
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button 
                                         type="submit" 
                                         class="btn btn-sm btn-secondary-custom d-inline-flex align-items-center gap-1" 

@@ -233,13 +233,13 @@ class Step2TestCase(unittest.TestCase):
 
     def test_12_static_assets_continue_to_load(self):
         """12. CSS and JavaScript assets continue to load."""
-        resp_css = self.client.get("/static/css/style.css")
-        self.assertEqual(resp_css.status_code, 200)
-        self.assertIn(b"--dr-primary", resp_css.data)
+        with self.client.get("/static/css/style.css") as resp_css:
+            self.assertEqual(resp_css.status_code, 200)
+            self.assertIn(b"--dr-primary", resp_css.data)
 
-        resp_js = self.client.get("/static/js/main.js")
-        self.assertEqual(resp_js.status_code, 200)
-        self.assertIn(b"Deadline Rescue", resp_js.data)
+        with self.client.get("/static/js/main.js") as resp_js:
+            self.assertEqual(resp_js.status_code, 200)
+            self.assertIn(b"Deadline Rescue", resp_js.data)
 
 
 if __name__ == "__main__":

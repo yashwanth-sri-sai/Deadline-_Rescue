@@ -20,6 +20,7 @@ from flask import (
 )
 
 import analytics
+import csrf
 import database
 import priority
 
@@ -148,6 +149,9 @@ def create_app(test_config: dict | None = None) -> Flask:
         SECRET_KEY=configured_secret,
         DATABASE=os.environ.get("DB_PATH", default_db),
         DEBUG=os.environ.get("FLASK_DEBUG", default_debug).lower() in ("true", "1"),
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=is_vercel or (os.environ.get("FLASK_ENV") == "production"),
     )
 
     if test_config:
@@ -155,6 +159,22 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     # Initialize SQLite database schema
     database.init_app(app)
+
+    # Initialize CSRF protection
+    csrf.init_app(app)
+
+    # Normalize legacy serverless rewrite prefixes if passed in WSGI environment
+    orig_wsgi = app.wsgi_app
+
+    def wsgi_prefix_handler(environ, start_response):
+        path = environ.get("PATH_INFO", "")
+        if path == "/api/index" or path == "/api/index/":
+            environ["PATH_INFO"] = "/"
+        elif path.startswith("/api/index/"):
+            environ["PATH_INFO"] = path[len("/api/index"):]
+        return orig_wsgi(environ, start_response)
+
+    app.wsgi_app = wsgi_prefix_handler
 
     @app.route("/")
     def index():
@@ -171,6 +191,23 @@ def create_app(test_config: dict | None = None) -> Flask:
             dashboard=dashboard_data,
             page_title="Academic Command Center — Deadline Rescue",
             active_page="home",
+        )
+
+    @app.route("/analytics")
+    def analytics_route():
+        """
+        Coursework analytics route handler.
+        Retrieves all registered tasks from SQLite, computes live progress analytics,
+        summary cards, subject workloads, and upcoming deadlines, and renders the dashboard template.
+        """
+        raw_tasks = database.get_all_tasks(app.config.get("DATABASE"))
+        dashboard_data = analytics.get_dashboard_data(raw_tasks)
+
+        return render_template(
+            "dashboard.html",
+            dashboard=dashboard_data,
+            page_title="Academic Command Center — Deadline Rescue",
+            active_page="analytics",
         )
 
     @app.route("/tasks")

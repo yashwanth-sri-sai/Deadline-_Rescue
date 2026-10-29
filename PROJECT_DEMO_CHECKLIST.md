@@ -166,7 +166,7 @@ This sequence provides a deterministic, repeatable 10-minute walkthrough demonst
   .\.venv\Scripts\python.exe -m unittest discover -p "test_*.py" -v
   ```
 - **Explain to Evaluator**:
-  - Shows 148 automated tests across 6 test modules covering unit calculations, date boundaries, CRUD operations, filters, sorting, dashboard analytics, and security regressions.
+  - Shows 185 automated tests across 7 test modules covering unit calculations, date boundaries, CRUD operations, filters, sorting, dashboard analytics, CSRF token validation, and security regressions.
   - 100% pass rate with zero failures.
 
 ---
@@ -190,9 +190,9 @@ This sequence provides a deterministic, repeatable 10-minute walkthrough demonst
 
 ---
 
-### Q3: Why is CSRF protection documented as a limitation rather than being enabled with an external library?
+### Q3: How is CSRF protection implemented in Deadline Rescue?
 > **Answer**:  
-> To maintain zero external network dependency stability in an academic evaluation environment, external package installation (such as `Flask-WTF`) was omitted. In accordance with the project specification, Deadline Rescue is designed and documented as a **local academic prototype** running on `127.0.0.1`. For production multi-user web deployment, CSRF protection via Flask-WTF is documented as an essential production enhancement.
+> CSRF protection is implemented via the Synchronizer Token Pattern in `csrf.py` using standard-library cryptography without external package dependencies. Cryptographically secure 256-bit hex tokens (`secrets.token_hex(32)`) are anchored to the user's signed session cookie and verified via constant-time comparison (`hmac.compare_digest`). Every state-changing route (`/tasks/new`, `/tasks/<id>/edit`, `/complete`, `/reopen`, `/delete`) validates the submitted token, rejecting missing, invalid, or cross-session tokens with HTTP 400.
 
 ---
 

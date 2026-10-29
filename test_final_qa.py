@@ -127,6 +127,38 @@ class FinalQARouteHealthTestCase(unittest.TestCase):
             self.assertIn(b"Smart Search, Filtering & Sorting", resp_js.data)
             self.assertIn(b"Step 7", resp_js.data)
 
+    def test_analytics_route_health(self):
+        """Analytics route (/analytics) returns HTTP 200 and renders dashboard analytics."""
+        resp = self.client.get("/analytics")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b"Academic Command Center", resp.data)
+        self.assertIn(b"Overall Coursework Completion Progress", resp.data)
+
+    def test_empty_database_does_not_return_404(self):
+        """Empty SQLite database renders the dashboard with HTTP 200, not custom 404."""
+        resp = self.client.get("/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn(b"Task or Page Not Found", resp.data)
+        self.assertIn(b"Academic Command Center", resp.data)
+
+    def test_api_index_prefix_normalization_regression(self):
+        """Legacy /api/index rewrite targets normalize to root and tasks without 404."""
+        resp_root = self.client.get("/api/index")
+        self.assertEqual(resp_root.status_code, 200)
+        self.assertIn(b"Academic Command Center", resp_root.data)
+
+        resp_tasks = self.client.get("/api/index/tasks")
+        self.assertEqual(resp_tasks.status_code, 200)
+        self.assertIn(b"Assignments &amp; Deadlines", resp_tasks.data)
+
+    def test_all_core_routes_resolve_correctly(self):
+        """Core application routes (/, /tasks, /analytics, /tasks/new) all return HTTP 200."""
+        routes = ["/", "/tasks", "/analytics", "/tasks/new"]
+        for route in routes:
+            with self.subTest(route=route):
+                resp = self.client.get(route)
+                self.assertEqual(resp.status_code, 200, f"Route {route} failed to resolve with 200 OK")
+
 
 class FinalQAEndToEndLifecycleTestCase(unittest.TestCase):
     """Verifies complete task lifecycle: Create -> List -> Edit -> Complete -> Reopen -> Delete."""
@@ -609,6 +641,55 @@ class FinalQABoundaryAndEdgeCasesTestCase(unittest.TestCase):
         upcoming = analytics.get_upcoming_deadlines(tasks, today=self.ref_today, limit=5)
         self.assertEqual(upcoming[0]["id"], 5)
         self.assertEqual(upcoming[1]["id"], 10)
+
+
+class FinalQADualThemeRegressionTestCase(unittest.TestCase):
+    """Verifies that the dual-theme system (Dark Neon Dusk & Bright Purple) is properly integrated."""
+
+    def setUp(self):
+        self.db_fd, self.db_path = tempfile.mkstemp(suffix=".db")
+        os.close(self.db_fd)
+        self.app = create_app({"TESTING": True, "DATABASE": self.db_path})
+        self.client = self.app.test_client()
+
+    def tearDown(self):
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+
+    def test_dual_theme_navbar_toggle_elements(self):
+        """Theme toggle button and icons exist in navbar with accessible attributes."""
+        resp = self.client.get("/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b'id="theme-toggle"', resp.data)
+        self.assertIn(b'theme-toggle-btn', resp.data)
+        self.assertIn(b'bi-sun-fill', resp.data)
+        self.assertIn(b'bi-moon-stars-fill', resp.data)
+        self.assertIn(b'aria-label="Switch to bright theme"', resp.data)
+
+    def test_fouc_prevention_script_in_head(self):
+        """Head includes synchronous theme script checking localStorage to prevent FOUC."""
+        resp = self.client.get("/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b"deadline-rescue-theme", resp.data)
+        self.assertIn(b"document.documentElement.setAttribute('data-theme'", resp.data)
+
+    def test_dual_theme_css_tokens(self):
+        """CSS defines design tokens for both Dark Neon Dusk and Bright Purple themes."""
+        with self.client.get("/static/css/style.css") as resp:
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn(b'[data-theme="dark"]', resp.data)
+            self.assertIn(b'[data-theme="light"]', resp.data)
+            self.assertIn(b'--color-background', resp.data)
+            self.assertIn(b'--color-primary', resp.data)
+            self.assertIn(b'--dr-primary', resp.data)
+
+    def test_dual_theme_js_controller(self):
+        """JavaScript client includes theme controller and localStorage persistence functions."""
+        with self.client.get("/static/js/main.js") as resp:
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn(b"deadline-rescue-theme", resp.data)
+            self.assertIn(b"applyTheme", resp.data)
+            self.assertIn(b"updateThemeToggleUI", resp.data)
 
 
 if __name__ == "__main__":

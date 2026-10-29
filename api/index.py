@@ -1,12 +1,9 @@
 """
 Deadline Rescue — Vercel WSGI Entry Point
 
-This module is the serverless function entry point for Vercel's Python runtime.
+This module serves as an alternative serverless function entry point for Vercel's Python runtime.
 It imports the Flask application factory from the parent directory and exposes
-the `app` WSGI callable that Vercel's runtime expects.
-
-Vercel discovers this file via vercel.json builds → api/index.py.
-All routes are forwarded here via the catch-all route in vercel.json.
+the `app` WSGI callable.
 
 IMPORTANT NOTES for Vercel's serverless model:
 - The filesystem is read-only except for /tmp (which is ephemeral).

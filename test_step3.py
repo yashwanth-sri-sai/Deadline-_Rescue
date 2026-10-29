@@ -456,10 +456,10 @@ class Step3TestCase(unittest.TestCase):
 
     def test_26_static_assets_still_load(self):
         """26. Existing CSS and JavaScript endpoints still work."""
-        resp_css = self.client.get("/static/css/style.css")
-        self.assertEqual(resp_css.status_code, 200)
-        resp_js = self.client.get("/static/js/main.js")
-        self.assertEqual(resp_js.status_code, 200)
+        with self.client.get("/static/css/style.css") as resp_css:
+            self.assertEqual(resp_css.status_code, 200)
+        with self.client.get("/static/js/main.js") as resp_js:
+            self.assertEqual(resp_js.status_code, 200)
 
     def test_27_handles_missing_task_ids_without_500_error(self):
         """27. The application handles missing task IDs without an internal server error (500)."""

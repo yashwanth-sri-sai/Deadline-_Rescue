@@ -66,8 +66,10 @@ $$\text{Priority Score} = 0.60 \times U + 0.25 \times \left(\frac{I}{5} \times 1
 - **Backend**: Python 3.11+, Flask 3.1
 - **Database**: SQLite3 (via Python standard library `sqlite3` with parameterized statements)
 - **Frontend**: HTML5, Vanilla CSS design tokens (`static/css/style.css`), Bootstrap 5.3.3 & Bootstrap Icons 1.11.3 (via CDN)
+- **Themes**: Dual-theme system (Dark Neon Dusk default, Bright Purple alternative) with `localStorage` persistence
+- **Security**: Synchronizer Token Pattern CSRF protection via `csrf.py`, autoescaped Jinja templates, parameterized SQL
 - **Client Scripting**: Vanilla JavaScript (`static/js/main.js`)
-- **Testing**: Python standard library `unittest` (148 automated tests)
+- **Testing**: Python standard library `unittest` (185 automated tests)
 
 ---
 
@@ -79,6 +81,7 @@ Deadline-_Rescue/
 ├── database.py                 # SQLite connection manager, schema initialization, CRUD functions
 ├── priority.py                 # Priority calculation, urgency thresholds, filtering and sorting
 ├── analytics.py                # Dashboard statistical aggregation and workload calculations
+├── csrf.py                     # Session-bound CSRF token generation and validation
 ├── requirements.txt            # Python package dependencies (Flask)
 ├── .gitignore                  # Git ignore rules for virtualenvs, caches, and databases
 ├── README.md                   # Project documentation
@@ -96,12 +99,14 @@ Deadline-_Rescue/
 │   ├── css/
 │   │   └── style.css           # Custom CSS stylesheet with design tokens and cards
 │   └── js/
+│       └── main.js             # Client interactivity, theme toggle, and filters
 ├── test_priority.py            # Priority engine and urgency calculations (28 tests)
 ├── test_analytics.py           # Dashboard metrics and workload aggregation (27 tests)
 ├── test_task_filters.py        # Search, multi-criteria filters, and sorting modes (33 tests)
-├── test_step2.py               # Database foundation, schema, and validation (12 tests)
+├── test_step2.py               # Database initialization & validation (12 tests)
 ├── test_step3.py               # Task CRUD lifecycle operations (27 tests)
-└── test_final_qa.py            # End-to-end user workflows and security regression (21 tests)
+├── test_csrf.py                # CSRF protection and token validation (29 tests)
+└── test_final_qa.py            # End-to-end workflows and security regression (29 tests)
 ```
 
 ---
@@ -153,9 +158,9 @@ Open your browser to:
 
 ## 7. How to Run Tests
 
-The project includes **148 automated unit and integration tests** built using Python's standard `unittest` framework.
+The project includes **185 automated unit and integration tests** built using Python's standard `unittest` framework.
 
-### Run All 148 Tests
+### Run All 185 Tests
 ```powershell
 python -m unittest discover -s . -p "test_*.py" -v
 ```
@@ -167,7 +172,8 @@ python -m unittest test_analytics.py -v      # Dashboard analytics & workload (2
 python -m unittest test_task_filters.py -v   # Search, filter, and sort (33 tests)
 python -m unittest test_step2.py -v          # Database initialization & validation (12 tests)
 python -m unittest test_step3.py -v          # Task CRUD lifecycle (27 tests)
-python -m unittest test_final_qa.py -v       # End-to-end QA & security (21 tests)
+python -m unittest test_csrf.py -v           # CSRF token security & session isolation (29 tests)
+python -m unittest test_final_qa.py -v       # End-to-end workflows & security regression (29 tests)
 ```
 
 All test cases use isolated temporary SQLite databases (`tempfile.mkstemp()`), ensuring that running the test suite never modifies or deletes your actual local data.
@@ -182,6 +188,17 @@ All test cases use isolated temporary SQLite databases (`tempfile.mkstemp()`), e
 - **Data Persistence**: Records persist permanently across application restarts. Existing records are never overwritten or deleted on server start.
 - **Git Ignore**: The `instance/` folder and `*.db` files are excluded by [.gitignore](file:///.gitignore) to keep personal coursework databases out of version control.
 
+### Vercel SQLite limitation — college demonstration
+
+Deadline Rescue currently uses SQLite. The deployed Vercel configuration stores its temporary database under `/tmp`.
+
+- Data in `/tmp` is not guaranteed to persist between runtime instances or deployments.
+- Different serverless instances may have separate database files.
+- Task records and analytics may disappear or differ between requests.
+- The local database at `instance/deadline_rescue.db` is separate from the deployed temporary database.
+- This setup is for a college demonstration only, not permanent academic record keeping.
+- Before real-world use, the application will need suitable persistent storage and a verified backup/recovery plan.
+
 ---
 
 ## 9. Security & Project Limitations
@@ -189,7 +206,7 @@ All test cases use isolated temporary SQLite databases (`tempfile.mkstemp()`), e
 1. **Academic Prototype Context**: Deadline Rescue is designed and tested as a local, single-user academic tool running on `127.0.0.1`.
 2. **SQL Injection Protection**: All database queries in `database.py` use parameterized statements (`?` placeholders). Raw user input is never concatenated into SQL queries.
 3. **Cross-Site Scripting (XSS) Prevention**: All user-provided fields (titles, subjects, descriptions) are rendered through Jinja2 with autoescaping enabled.
-4. **CSRF Tokens**: Form submissions currently do not use CSRF tokens to avoid external package dependencies (such as `Flask-WTF`) in offline academic evaluation environments.
+4. **CSRF Protection**: Comprehensive Synchronizer Token Pattern (STP) protection is implemented via `csrf.py` using Python standard library cryptography (`secrets.token_hex(32)` and `hmac.compare_digest`). All state-changing form submissions (create, edit, complete, reopen, delete) require a valid session-bound token. Requests with missing, invalid, or cross-session tokens are rejected with HTTP 400.
 5. **Authentication**: User accounts, login sessions, and multi-user access control are not part of this prototype scope.
 
 ---

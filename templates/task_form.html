@@ -37,9 +37,9 @@
                             </h1>
                             <p class="text-secondary small mb-0">
                                 {% if is_edit %}
-                                Update assignment details stored in SQLite database.
+                                Update assignment details and deadlines.
                                 {% else %}
-                                Enter assignment details to store in the local SQLite database.
+                                Enter assignment details to track deadlines and calculated priority.
                                 {% endif %}
                             </p>
                         </div>
@@ -61,6 +61,8 @@
                         novalidate 
                         id="task-form"
                     >
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
                         <!-- Task Title Field -->
                         <div class="mb-4">
                             <label for="title" class="form-label fw-bold text-slate-800">
