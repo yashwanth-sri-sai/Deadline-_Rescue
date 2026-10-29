@@ -22,10 +22,12 @@
                 <i class="bi bi-plus-circle me-2"></i>
                 <span>Add Task</span>
             </a>
+            {% if dashboard.has_tasks %}
             <a href="{{ url_for('list_tasks') }}" class="btn btn-secondary-custom d-inline-flex align-items-center shadow-sm" id="btn-dashboard-view-tasks">
                 <i class="bi bi-list-check me-2"></i>
                 <span>Manage Tasks</span>
             </a>
+            {% endif %}
         </div>
     </div>
 
