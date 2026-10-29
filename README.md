@@ -85,7 +85,6 @@ Deadline-_Rescue/
 ├── requirements.txt            # Python package dependencies (Flask)
 ├── .gitignore                  # Git ignore rules for virtualenvs, caches, and databases
 ├── README.md                   # Project documentation
-├── PROJECT_DEMO_CHECKLIST.md   # Evaluator demonstration checklist and technical Q&A
 ├── instance/
 │   └── deadline_rescue.db      # Local SQLite database (auto-created on startup, git-ignored)
 ├── templates/
